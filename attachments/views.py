@@ -36,7 +36,7 @@ def add_url_for_obj(obj):
 @login_required
 def add_attachment(request, app_label, module_name, pk,
                    template_name='attachments/add.html', extra_context={}):
-    ajax = request.is_ajax
+    ajax = request.is_ajax()
     
     next = request.POST.get('next', '/')
     model = get_model(app_label, module_name)
@@ -72,7 +72,7 @@ def add_attachment(request, app_label, module_name, pk,
 @require_POST
 @login_required
 def delete_attachment(request, attachment_pk):
-    ajax = request.is_ajax
+    ajax = request.is_ajax()
 
     g = get_object_or_404(Attachment, pk=attachment_pk)
     if request.user.has_perm('delete_foreign_attachments') \
