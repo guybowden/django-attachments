@@ -7,15 +7,18 @@ from django.contrib.contenttypes import generic
 from django.core.files.storage import DefaultStorage
 from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
+import re
 
 # attachment storage can be customised using ATTACHMENTS_STORAGE.
 storage = getattr(settings, 'ATTACHMENTS_STORAGE', None) or DefaultStorage()
+
 
 class AttachmentManager(models.Manager):
     def attachments_for_object(self, obj):
         object_type = ContentType.objects.get_for_model(obj)
         return self.filter(content_type__pk=object_type.id,
                            object_id=obj.id)
+
 
 class Attachment(models.Model):
 
@@ -62,7 +65,6 @@ class Attachment(models.Model):
 
         return fullname
 
-
     objects = AttachmentManager()
 
     content_type = models.ForeignKey(ContentType)
@@ -73,12 +75,13 @@ class Attachment(models.Model):
                                  upload_to=attachment_upload, storage=storage)
     created = models.DateTimeField(_('created'), auto_now_add=True)
     modified = models.DateTimeField(_('modified'), auto_now=True)
-    safe = models.BooleanField (_('safe'), default=False)
+    safe = models.BooleanField(_('safe'), default=False)
     mime_type = models.CharField(_('mime type'), max_length=50, null=True, blank=True,
                                  help_text=_('leave empty to handle by file extension'))
     display_name = models.CharField(_('display name'), max_length=256,
                           null=True, blank=True,
                           help_text=_('displayed as link text for attachment.'))
+
     class Meta:
         ordering = ['-created']
         permissions = (
@@ -91,12 +94,26 @@ class Attachment(models.Model):
                  self.display_name or self.attachment_file.name))
 
     @property
+    def file_type(self):
+        return self.filename.split('.')[-1]
+
+    @property
     def link_name(self):
         return self.display_name or self.filename
 
     @property
     def filename(self):
         return os.path.split(self.attachment_file.name)[1]
+
+    @property
+    def nice_filename(self):
+        filename = self.filename
+        filename = filename.split('.')[:-1]
+        filename = ' '.join(filename)
+        filename = re.sub(r'[-_]', ' ', filename)
+        return filename.title()
+
+
 
     @models.permalink
     def get_absolute_url(self):
